@@ -79,9 +79,9 @@ const Navbar = () => {
           </Link>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <Menu.Item key="home">
+            <Menu.Item key="blog">
               <Link to="/" style={{ fontSize: '16px' }}>
-                Home
+                Blogs
               </Link>
             </Menu.Item>
 

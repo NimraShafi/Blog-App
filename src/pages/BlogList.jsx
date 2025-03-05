@@ -10,6 +10,8 @@ import {
 import { db } from '../context/Firebase';
 import { Card, Button, Modal, Typography, Space, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
+import { getAuth } from 'firebase/auth';
+
 
 const { Title, Text } = Typography;
 
@@ -18,7 +20,8 @@ const BlogList = () => {
   const [selectedBlog, setSelectedBlog] = useState(null);
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const navigate = useNavigate();
-
+  const auth = getAuth();
+  const user = auth.currentUser;
   useEffect(() => {
     const fetchBlogs = async () => {
       const blogsRef = collection(db, 'blogs');
@@ -62,7 +65,9 @@ const BlogList = () => {
               key={blog.id}
               title={<span style={{ fontSize: '18px' }}>{blog.title}</span>}
               extra={
+                
                 <Space>
+                
                   <Button
                     onClick={() => {
                       setSelectedBlog(blog);
@@ -73,10 +78,23 @@ const BlogList = () => {
                   </Button>
                   <Button
                     onClick={() => navigate(`/form`, { state: { blog } })}
+                    disabled={!user || user.uid !== blog.userId}
+                    style={{
+                      opacity: user && user.uid !== blog.userId ? 0.5 : 1,
+                      cursor: user && user.uid !== blog.userId ? 'not-allowed' : 'pointer',
+                    }}
                   >
                     Edit
                   </Button>
-                  <Button danger onClick={() => handleDelete(blog.id)}>
+                  <Button
+                    danger
+                    onClick={() => handleDelete(blog.id)}
+                    disabled={!user || user.uid !== blog.userId}
+                    style={{
+                      opacity: user && user.uid !== blog.userId ? 0.5 : 1,
+                      cursor: user && user.uid !== blog.userId ? 'not-allowed' : 'pointer',
+                    }}
+                  >
                     Delete
                   </Button>
                 </Space>

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Form, Input, Button, Card, Typography, message } from 'antd';
 import { db } from '../context/Firebase';
 import { doc, updateDoc, setDoc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 const { Title } = Typography;
 
@@ -24,8 +25,23 @@ const BlogForm = () => {
 
   const handleSubmit = async (values) => {
     setLoading(true);
+    const auth = getAuth();
+    const user = auth.currentUser;
+  
+    if (!user) {
+      message.error('You must be logged in to create or edit a blog.');
+      setLoading(false);
+      return;
+    }
+  
     try {
       if (blogToEdit) {
+        if (blogToEdit.userId !== user.uid) {
+          message.error("You can only edit your own blogs.");
+          setLoading(false);
+          return;
+        }
+  
         await updateDoc(doc(db, 'blogs', blogToEdit.id), {
           title: values.title,
           content: values.content,
@@ -36,6 +52,7 @@ const BlogForm = () => {
         await setDoc(newDocRef, {
           title: values.title,
           content: values.content,
+          userId: user.uid,
           createdAt: new Date(),
         });
         message.success('Blog posted successfully!');
@@ -47,7 +64,6 @@ const BlogForm = () => {
     }
     setLoading(false);
   };
-
   return (
     <div
       style={{

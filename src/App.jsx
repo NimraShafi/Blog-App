@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './component/Navbar';
+import BlogForm from './component/BlogForm';
 import BlogList from './pages/BlogList';
-import BlogForm from './pages/BlogForm';
 import Login from './pages/Login';
 import Register from './pages/Register';
 function App() {

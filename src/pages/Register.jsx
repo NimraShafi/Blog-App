@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Form, Input, Typography } from 'antd';
 import { useFirebase } from '../context/Firebase';
 import { useNavigate, Link } from 'react-router-dom';
@@ -10,6 +10,12 @@ const Register = () => {
   const firebase = useFirebase();
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (firebase.isLoggedIn) {
+      navigate('/');
+    }
+  }, [firebase.isLoggedIn, navigate]);
+
   const handleSubmit = async (values) => {
     setLoading(true);
     try {
@@ -17,7 +23,6 @@ const Register = () => {
         values.email,
         values.password
       );
-
       navigate('/login');
     } catch (error) {
       console.error('Registration Error:', error.message);
