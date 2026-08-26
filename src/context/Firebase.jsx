@@ -19,20 +19,23 @@ import {
 } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDFin2qo2Y2kX6PmhwG79CnhqHQEfjYUg0",
-  authDomain: "blog-application-3830f.firebaseapp.com",
-  projectId: "blog-application-3830f",
-  storageBucket: "blog-application-3830f.firebasestorage.app",
-  messagingSenderId: "803079259789",
-  appId: "1:803079259789:web:a7e29006c63071d77104c4",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
+
 export const firebaseAuth = getAuth(firebaseApp);
 export const db = getFirestore(firebaseApp);
+
 const googleProvider = new GoogleAuthProvider();
 
 const FirebaseContext = createContext(null);
+
 export const useFirebase = () => useContext(FirebaseContext);
 
 const createUserInFirestore = async (user) => {
@@ -40,19 +43,26 @@ const createUserInFirestore = async (user) => {
 
   const userRef = doc(db, "users", user.uid);
 
-  const userData = {
-    email: user.email,
-    username: user.displayName || "Anonymous",
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  };
-
-  await setDoc(userRef, userData, { merge: true });
+  await setDoc(
+    userRef,
+    {
+      email: user.email,
+      username: user.displayName || "Anonymous",
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
 };
 
 const signupUserWithEmailAndPassword = async (email, password) => {
-  const userCredential = await createUserWithEmailAndPassword(firebaseAuth, email, password);
+  const userCredential = await createUserWithEmailAndPassword(
+    firebaseAuth,
+    email,
+    password,
+  );
+
   await createUserInFirestore(userCredential.user);
+
   return userCredential;
 };
 
@@ -62,49 +72,58 @@ const signinWithEmailAndPassword = async (email, password) => {
 
 const signinWithGoogle = async () => {
   const userCredential = await signInWithPopup(firebaseAuth, googleProvider);
+
   await createUserInFirestore(userCredential.user);
+
   return userCredential;
 };
 
 const createBlogPost = async (userId, title, content) => {
-  if (!userId) throw new Error("User must be logged in to create a blog post.");
-
-  const blogsCollection = collection(db, "blogs");
+  if (!userId) {
+    throw new Error("User must be logged in to create a blog post.");
+  }
 
   const newBlog = {
-    userId, 
+    userId,
     title,
     content,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
 
-  const docRef = await addDoc(blogsCollection, newBlog);
-  console.log("Blog Created with ID:", docRef.id);
+  const docRef = await addDoc(collection(db, "blogs"), newBlog);
+
   return docRef;
 };
 
-export const FirebaseProvider = (props) => {
+export const FirebaseProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
-      setUser(user);
-      if (user) {
-        await createUserInFirestore(user);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
+    const unsubscribe = onAuthStateChanged(
+      firebaseAuth,
+      async (currentUser) => {
+        setUser(currentUser);
 
-  const isLoggedIn = !!user;
+        if (currentUser) {
+          try {
+            await createUserInFirestore(currentUser);
+          } catch (error) {
+            console.error("User profile error:", error);
+          }
+        }
+      },
+    );
+
+    return unsubscribe;
+  }, []);
 
   const logoutUser = async () => {
     try {
-      await signOut(firebaseAuth); 
+      await signOut(firebaseAuth);
       setUser(null);
     } catch (error) {
-      console.error("Logout Error:", error.message);
+      console.error("Logout Error:", error);
     }
   };
 
@@ -115,12 +134,12 @@ export const FirebaseProvider = (props) => {
         signinWithEmailAndPassword,
         signinWithGoogle,
         createBlogPost,
-        isLoggedIn,
+        isLoggedIn: !!user,
         user,
         logoutUser,
       }}
     >
-      {props.children}
+      {children}
     </FirebaseContext.Provider>
   );
 };
